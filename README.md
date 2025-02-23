@@ -50,6 +50,46 @@ pip install -r requirements.txt
 - Preencha as chaves de API necessárias
 - **IMPORTANTE**: Nunca compartilhe suas chaves de API ou informações sensíveis
 
+## Notebooks Jupyter
+
+A CodeMaria inclui uma série de notebooks Jupyter que demonstram suas funcionalidades e servem como tutoriais interativos:
+
+### Como Utilizar os Notebooks
+
+1. **Preparação do Ambiente**:
+   ```bash
+   pip install jupyter notebook
+   jupyter notebook
+   ```
+
+2. **Estrutura dos Notebooks**:
+   - `00_Introducao.ipynb`: Visão geral do projeto e configuração inicial
+   - `01_Learning.ipynb`: Demonstração do módulo de aprendizado
+   - `02_Creativity.ipynb`: Exemplos de geração de conteúdo criativo
+   - `03_PDF_Processing.ipynb`: Tutorial de processamento de PDFs
+   - `04_API_Integrations.ipynb`: Guia de integração com APIs
+   - `05_Examples.ipynb`: Exemplos práticos de uso
+
+3. **Executando os Notebooks**:
+   - Navegue até a pasta `notebooks/`
+   - Clique no notebook desejado
+   - Execute as células em sequência (Shift + Enter)
+   - Siga as instruções e exemplos em cada notebook
+
+4. **Dicas de Uso**:
+   - Certifique-se de ter todas as dependências instaladas
+   - Configure o arquivo `.env` antes de executar os notebooks
+   - Leia os comentários e documentação em cada célula
+   - Experimente modificar os exemplos para aprender mais
+
+5. **Ordem Recomendada de Estudo**:
+   1. Comece pelo notebook de introdução
+   2. Explore o módulo de aprendizado
+   3. Avance para criatividade e geração de conteúdo
+   4. Aprenda sobre processamento de PDFs
+   5. Explore as integrações com APIs
+   6. Pratique com os exemplos
+
 ## Estrutura do Projeto
 
 ```
@@ -80,6 +120,14 @@ tests/               # Testes unitários e de integração
 ├── test_rate_limiter.py
 ├── test_cache_manager.py
 └── test_knowledge.py
+
+notebooks/           # Notebooks Jupyter
+├── 00_Introducao.ipynb
+├── 01_Learning.ipynb
+├── 02_Creativity.ipynb
+├── 03_PDF_Processing.ipynb
+├── 04_API_Integrations.ipynb
+└── 05_Examples.ipynb
 
 data/               # Dados de treinamento
 ├── pdfs/          # PDFs para processamento
