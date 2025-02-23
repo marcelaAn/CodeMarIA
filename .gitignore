@@ -29,9 +29,12 @@ wheels/
 .env
 .env.*
 
-# Logs
+# Logs e cache
 *.log
 logs/
+.coverage
+.pytest_cache/
+cache/
 
 # Notebooks Jupyter
 .ipynb_checkpoints
@@ -51,6 +54,14 @@ data/*
 !data/.gitkeep
 models/*
 !models/.gitkeep
+pdfs/*
+!pdfs/.gitkeep
 
 # Docker
-.docker/ 
+.docker/
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.bak
+hs_err_pid* 

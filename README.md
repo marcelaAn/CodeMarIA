@@ -27,7 +27,7 @@ CodeMaria é uma inteligência artificial autônoma e criativa, desenvolvida com
 
 1. Clone o repositório:
 ```bash
-git clone https://github.com/seu-usuario/CodeMarIA.git
+git clone https://github.com/marcelaAn/CodeMarIA.git
 cd CodeMarIA
 ```
 
@@ -48,6 +48,7 @@ pip install -r requirements.txt
 4. Configure as variáveis de ambiente:
 - Copie o arquivo `.env.example` para `.env`
 - Preencha as chaves de API necessárias
+- **IMPORTANTE**: Nunca compartilhe suas chaves de API ou informações sensíveis
 
 ## Estrutura do Projeto
 
@@ -138,6 +139,15 @@ GET  /pdf-stats         # Estatísticas de PDFs
 
 O projeto está em desenvolvimento ativo. Contribuições são bem-vindas!
 
+### Checklist de Segurança
+
+Antes de contribuir, certifique-se de:
+- ✅ Remover todas as referências a caminhos locais
+- ✅ Não incluir chaves de API ou senhas
+- ✅ Remover informações pessoais dos logs
+- ✅ Usar variáveis de ambiente para configurações sensíveis
+- ✅ Verificar arquivos de cache e logs antes do commit
+
 ### Executando Testes
 
 ```bash
@@ -161,6 +171,25 @@ docker build -t codemaria .
 # Executar container
 docker run -p 8000:8000 codemaria
 ```
+
+## Privacidade e Segurança
+
+Este projeto segue as melhores práticas de segurança e privacidade:
+
+1. **Dados Sensíveis**
+   - Todas as chaves de API devem ser armazenadas em variáveis de ambiente
+   - Nunca commite o arquivo `.env`
+   - Use o `.gitignore` para excluir arquivos sensíveis
+
+2. **Logs e Cache**
+   - Limpe logs antes do commit
+   - Não inclua dados pessoais nos logs
+   - Mantenha o cache local
+
+3. **Contribuições**
+   - Verifique seus commits por informações sensíveis
+   - Use ferramentas de sanitização quando necessário
+   - Siga o guia de contribuição
 
 ## Licença
 
