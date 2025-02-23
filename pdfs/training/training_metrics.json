@@ -1,0 +1,23 @@
+{
+  "total_processed": 22,
+  "successful": 20,
+  "failed": 2,
+  "cache_hits": 0,
+  "cache_misses": 20,
+  "total_processing_time": 299.6745595932007,
+  "avg_processing_time": 13.621570890600031,
+  "errors": {
+    "str": 2
+  },
+  "last_training": "2025-02-23T19:59:10.730459",
+  "sentiment_distribution": {
+    "NEUTRAL": 1,
+    "NEGATIVE": 18,
+    "POSITIVE": 1
+  },
+  "grammar_stats": {
+    "total_sentences": 67078,
+    "total_words": 2013355,
+    "avg_sentence_length": 30.015131637794806
+  }
+}

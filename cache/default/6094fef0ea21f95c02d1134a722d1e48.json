@@ -1,0 +1,17 @@
+{
+  "value": {
+    "query": "test query",
+    "total_results": 1000,
+    "time_taken": 0.5,
+    "items": [
+      {
+        "title": "Test Result",
+        "link": "https://test.com",
+        "snippet": "Test snippet",
+        "date": "2024-03-15"
+      }
+    ]
+  },
+  "timestamp": "2025-02-23T12:28:13.790975",
+  "namespace": "default"
+}

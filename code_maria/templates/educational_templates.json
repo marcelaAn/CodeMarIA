@@ -1,0 +1,29 @@
+{
+    "tutorial": {
+        "base": "Neste tutorial sobre {topic}, vamos aprender {objectives}",
+        "sections": [
+            "introdução",
+            "conceitos",
+            "exemplos",
+            "exercícios",
+            "conclusão"
+        ]
+    },
+    "quiz": {
+        "base": "Teste seus conhecimentos sobre {topic}",
+        "question_types": [
+            "múltipla escolha",
+            "verdadeiro/falso",
+            "completar"
+        ]
+    },
+    "code_example": {
+        "base": "Exemplo prático de {topic} em {language}",
+        "sections": [
+            "explicação",
+            "código",
+            "output",
+            "variações"
+        ]
+    }
+}
