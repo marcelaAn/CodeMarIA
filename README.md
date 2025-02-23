@@ -183,18 +183,208 @@ GET  /training-stats    # Estatísticas de treinamento
 GET  /pdf-stats         # Estatísticas de PDFs
 ```
 
+### Exemplos de Uso da API
+
+#### 1. Processamento de Entrada do Usuário
+```bash
+curl -X POST http://localhost:8000/process \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Como funciona o aprendizado contínuo?",
+    "context": "educational",
+    "level": "intermediate"
+  }'
+```
+
+Resposta:
+```json
+{
+  "response": {
+    "content": "O aprendizado contínuo na CodeMaria...",
+    "type": "explanation",
+    "confidence": 0.95
+  },
+  "metadata": {
+    "processing_time": "0.5s",
+    "sources": ["knowledge_base", "recent_learning"]
+  }
+}
+```
+
+#### 2. Upload de PDF
+```bash
+curl -X POST http://localhost:8000/upload-pdf \
+  -F "file=@exemplo.pdf" \
+  -F "metadata={\"category\":\"grammar\",\"language\":\"pt-BR\"}"
+```
+
+#### 3. Estatísticas de Treinamento
+```bash
+curl http://localhost:8000/training-stats
+```
+
+## Arquitetura do Sistema
+
+```mermaid
+graph TD
+    A[Interface do Usuário] --> B[API REST]
+    B --> C[Core Engine]
+    C --> D[Motor de Aprendizado]
+    C --> E[Motor de Criatividade]
+    C --> F[Processador PDF]
+    D --> G[Base de Conhecimento]
+    E --> G
+    F --> G
+    C --> H[APIs Externas]
+    H --> I[OpenAI]
+    H --> J[Google Search]
+    H --> K[News API]
+    H --> L[SerpAPI]
+    G --> M[Cache Manager]
+    G --> N[Rate Limiter]
+```
+
+### Componentes Principais
+
+1. **Core Engine**: Coordena todas as operações e fluxos de dados
+2. **Motor de Aprendizado**: Responsável pelo processamento e evolução do conhecimento
+3. **Motor de Criatividade**: Gera conteúdo personalizado e adaptativo
+4. **Processador PDF**: Extrai e analisa conteúdo de documentos
+5. **Cache Manager**: Otimiza o acesso a dados frequentes
+6. **Rate Limiter**: Controla o acesso às APIs externas
+
+## Cobertura de Testes
+
+⚠️ **Status Atual da Cobertura**: 12% (2229 statements, 1961 missed)
+
+A cobertura de testes é uma métrica crucial para garantir a qualidade e confiabilidade do código. Atualmente, estamos trabalhando para melhorar nossa cobertura de testes, que está abaixo do ideal. Contribuições focadas em aumentar a cobertura são muito bem-vindas!
+
+### Áreas Críticas para Melhoria
+
+- `api_integrations.py`: 0% de cobertura
+- `cache_manager.py`: 0% de cobertura
+- `rate_limiter.py`: 0% de cobertura
+- `pdf_trainer.py`: 77% de cobertura
+
+### Metas de Cobertura
+
+- Meta Curto Prazo: 50% de cobertura
+- Meta Médio Prazo: 75% de cobertura
+- Meta Longo Prazo: 90% de cobertura
+
+### Como Contribuir com Testes
+
+1. Identifique áreas com baixa cobertura usando:
+   ```bash
+   pytest --cov=code_maria --cov-report=html
+   ```
+2. Crie testes unitários focados em funções não testadas
+3. Adicione testes de integração para fluxos complexos
+4. Documente os casos de teste no código
+
+## Contribuindo
+
+### Como Contribuir
+
+1. **Fork e Clone**
+   ```bash
+   git clone https://github.com/seu-usuario/CodeMarIA.git
+   cd CodeMarIA
+   ```
+
+2. **Crie uma Branch**
+   ```bash
+   git checkout -b feature/sua-feature
+   ```
+
+3. **Desenvolva**
+   - Siga o estilo de código do projeto
+   - Adicione testes para novas funcionalidades
+   - Mantenha a documentação atualizada
+
+4. **Teste**
+   ```bash
+   pytest
+   flake8
+   black .
+   ```
+
+5. **Commit**
+   ```bash
+   git commit -m "feat: adiciona nova funcionalidade"
+   ```
+
+6. **Push e Pull Request**
+   ```bash
+   git push origin feature/sua-feature
+   ```
+
+### Diretrizes de Código
+
+- Use Python 3.9+ features
+- Siga PEP 8
+- Documente usando docstrings
+- Mantenha funções pequenas e focadas
+- Use type hints
+- Escreva testes unitários
+
+### Reportando Bugs
+
+1. Verifique se o bug já não foi reportado
+2. Use o template de bug report
+3. Inclua:
+   - Versão do Python
+   - Sistema operacional
+   - Passos para reproduzir
+   - Comportamento esperado vs atual
+   - Logs relevantes
+
+### Solicitando Features
+
+1. Verifique se a feature já não foi solicitada
+2. Use o template de feature request
+3. Descreva:
+   - Problema que a feature resolve
+   - Solução proposta
+   - Alternativas consideradas
+   - Contexto adicional
+
+## Agradecimentos
+
+Agradecemos a todos que contribuíram para o desenvolvimento deste projeto:
+
+- Contribuidores de código
+- Testadores
+- Revisores de documentação
+- Comunidade de usuários
+
+## Licença
+
+Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+
 ## Desenvolvimento
 
 O projeto está em desenvolvimento ativo. Contribuições são bem-vindas!
 
-### Checklist de Segurança
+### Ambiente de Desenvolvimento
 
-Antes de contribuir, certifique-se de:
-- ✅ Remover todas as referências a caminhos locais
-- ✅ Não incluir chaves de API ou senhas
-- ✅ Remover informações pessoais dos logs
-- ✅ Usar variáveis de ambiente para configurações sensíveis
-- ✅ Verificar arquivos de cache e logs antes do commit
+1. **Configuração do Ambiente**
+   ```bash
+   # Instalar dependências de desenvolvimento
+   pip install -r requirements-dev.txt
+   
+   # Configurar pre-commit hooks
+   pre-commit install
+   ```
+
+2. **Docker**
+   ```bash
+   # Construir imagem
+   docker build -t codemaria .
+   
+   # Executar container
+   docker run -p 8000:8000 codemaria
+   ```
 
 ### Executando Testes
 
@@ -210,15 +400,14 @@ pytest tests/test_knowledge.py
 pytest --cov=code_maria
 ```
 
-### Docker
+### Checklist de Segurança
 
-```bash
-# Construir imagem
-docker build -t codemaria .
-
-# Executar container
-docker run -p 8000:8000 codemaria
-```
+Antes de contribuir, certifique-se de:
+- ✅ Remover todas as referências a caminhos locais
+- ✅ Não incluir chaves de API ou senhas
+- ✅ Remover informações pessoais dos logs
+- ✅ Usar variáveis de ambiente para configurações sensíveis
+- ✅ Verificar arquivos de cache e logs antes do commit
 
 ## Privacidade e Segurança
 
@@ -239,15 +428,36 @@ Este projeto segue as melhores práticas de segurança e privacidade:
    - Use ferramentas de sanitização quando necessário
    - Siga o guia de contribuição
 
-## Licença
+## Documentação dos Notebooks
 
-Este projeto está sob a licença MIT.
+Os notebooks Jupyter são uma parte essencial da documentação do projeto. Cada notebook contém:
 
-## Autores
+### Estrutura Comum dos Notebooks
 
-- Equipe CodeMaria
-- Contribuidores da comunidade
+1. **Introdução**
+   - Objetivo do notebook
+   - Pré-requisitos
+   - Configuração necessária
 
-## Agradecimentos
+2. **Exemplos Práticos**
+   - Casos de uso comuns
+   - Exemplos de código
+   - Resultados esperados
 
-Agradecemos a todos que contribuíram para o desenvolvimento deste projeto. 
+3. **Explicações Detalhadas**
+   - Conceitos fundamentais
+   - Fluxo de dados
+   - Decisões de design
+
+4. **Troubleshooting**
+   - Problemas comuns
+   - Soluções
+   - Dicas de otimização
+
+### Melhores Práticas
+
+- Execute todas as células em ordem
+- Verifique as dependências listadas
+- Leia os comentários explicativos
+- Experimente modificar os exemplos
+- Consulte a documentação relacionada 
