@@ -64,4 +64,14 @@ pdfs/*
 *.tmp
 *.temp
 *.bak
-hs_err_pid* 
+hs_err_pid*
+
+# Arquivos com referências pessoais
+.coverage
+learning_results.json
+
+# Arquivos de distribuição e resultados
+content_types.png
+context_distribution.png
+language_distribution.png
+topics_distribution.png 
