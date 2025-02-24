@@ -144,11 +144,61 @@ data/               # Dados de treinamento
 - Cache de resultados
 
 ### Aprendizado
-- Aprendizado contínuo com PDFs
-- Análise de sentimentos
-- Atualização da base de conhecimento
-- Histórico de aprendizado
-- Métricas de evolução
+- Aprendizado contínuo com PDFs e recursos web
+- Extração de conhecimento da internet em tempo real
+- Análise de sentimentos e contexto
+- Atualização dinâmica da base de conhecimento
+- Histórico de aprendizado e evolução
+- Métricas de evolução e qualidade
+
+### Aprendizado Contínuo da Internet
+
+O CodeMaria utiliza diversas fontes online para manter seu conhecimento atualizado:
+
+1. **Fontes de Dados**:
+   - Artigos científicos via Google Scholar
+   - Documentação técnica atualizada
+   - Blogs e fóruns de tecnologia
+   - Repositórios de código (GitHub, GitLab)
+   - Feeds de notícias técnicas
+
+2. **Processo de Aprendizado**:
+   ```mermaid
+   graph LR
+       A[Coleta de Dados] --> B[Análise e Validação]
+       B --> C[Extração de Conhecimento]
+       C --> D[Integração à Base]
+       D --> E[Avaliação de Qualidade]
+       E --> F[Atualização do Modelo]
+   ```
+
+3. **Métricas de Qualidade**:
+   - Relevância do conteúdo
+   - Confiabilidade da fonte
+   - Atualidade da informação
+   - Coerência com conhecimento existente
+   - Utilidade prática
+
+4. **Ciclo de Atualização**:
+   - Verificação diária de novas fontes
+   - Processamento em tempo real
+   - Validação cruzada de informações
+   - Integração contínua ao conhecimento base
+   - Descarte de informações obsoletas
+
+5. **Áreas de Foco**:
+   - Tendências em programação
+   - Novas tecnologias e frameworks
+   - Melhores práticas de desenvolvimento
+   - Segurança e privacidade
+   - Metodologias educacionais
+
+6. **Controle de Qualidade**:
+   - Validação por especialistas
+   - Feedback dos usuários
+   - Testes automatizados
+   - Métricas de desempenho
+   - Avaliação de impacto
 
 ### Criatividade
 - Geração de conteúdo educacional
