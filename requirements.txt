@@ -5,15 +5,17 @@ torchaudio>=2.0.0
 transformers>=4.30.0
 openai>=1.0.0
 
-# Bibliotecas de Dados e Processamento
+# Processamento de texto
+nltk>=3.8.0
 numpy>=1.24.0
 pandas>=2.0.0
 scikit-learn>=1.3.0
-nltk>=3.8.0
+
+# Processamento de documentos
 PyPDF2>=3.0.0
 PyMuPDF>=1.20.0
 
-# Frameworks Web e APIs
+# Web
 fastapi>=0.100.0
 uvicorn>=0.23.0
 requests>=2.31.0
@@ -21,13 +23,26 @@ beautifulsoup4>=4.12.0
 python-dotenv>=1.0.0
 pydantic>=2.0.0
 
-# Cache e Rate Limiting
+# Cache
 redis>=5.0.0
 ratelimit>=2.2.1
 
-# Ferramentas de Desenvolvimento
+# Testes e qualidade de código
 pytest>=7.4.0
 pytest-cov>=4.1.0
 black>=23.7.0
 flake8>=6.1.0
-PyYAML>=6.0.0 
+PyYAML>=6.0.0
+
+# Novas dependências
+spacy==3.7.2
+pt-core-news-sm==3.7.0
+nltk==3.8.1
+numpy==1.24.3
+pandas==2.0.3
+scikit-learn==1.3.0
+torch==2.0.1
+transformers==4.31.0
+beautifulsoup4==4.12.2
+requests==2.31.0
+python-dotenv==1.0.0 

@@ -6,6 +6,8 @@ Define as características, comportamentos e traços de personalidade da IA.
 import logging
 from typing import Dict, Any, List, Optional
 from datetime import datetime
+import re
+import random
 
 # Configuração de logging
 logging.basicConfig(
@@ -95,29 +97,47 @@ class Persona:
             Dict com pesos para diferentes estilos de resposta
         """
         try:
-            if "técnico" in context.lower() or "código" in context.lower():
+            context = context.lower()
+            
+            if context == "educational":
                 return {
                     "formal": 0.7,
-                    "técnico": 0.8,
-                    "didático": 0.95,
-                    "empático": 0.85
-                }
-            elif "dúvida" in context.lower() or "ajuda" in context.lower():
-                return {
                     "informal": 0.8,
-                    "empático": 0.95,
+                    "técnico": 0.6,
                     "didático": 0.95,
-                    "motivador": 0.9
-                }
-            elif "iniciante" in context.lower() or "básico" in context.lower():
-                return {
-                    "informal": 0.9,
-                    "empático": 0.95,
-                    "didático": 0.95,
+                    "empático": 0.9,
                     "motivador": 0.95
+                }
+            elif context == "geographic":
+                return {
+                    "formal": 0.8,
+                    "informal": 0.6,
+                    "técnico": 0.7,
+                    "didático": 0.85,
+                    "empático": 0.7,
+                    "informativo": 0.95
+                }
+            elif context == "technical":
+                return {
+                    "formal": 0.85,
+                    "informal": 0.6,
+                    "técnico": 0.95,
+                    "didático": 0.9,
+                    "empático": 0.7,
+                    "preciso": 0.95
+                }
+            elif context == "cultural":
+                return {
+                    "formal": 0.7,
+                    "informal": 0.8,
+                    "técnico": 0.5,
+                    "didático": 0.85,
+                    "empático": 0.9,
+                    "descritivo": 0.95
                 }
             else:
                 return self.communication_style
+            
         except Exception as e:
             logger.error(f"Erro ao determinar estilo de resposta: {str(e)}")
             return self.communication_style
@@ -201,6 +221,170 @@ class Persona:
     def __str__(self) -> str:
         """Retorna uma representação string da persona."""
         return f"{self.basic_info['nome']} - Professora de Programação {self.basic_info['nacionalidade']} | {self.basic_info['idade']} anos"
+
+    def adjust_response(self, response: str, context: str) -> str:
+        """
+        Ajusta a resposta de acordo com o estilo definido pelo contexto.
+        
+        Args:
+            response: Texto da resposta original
+            context: Contexto da interação
+            
+        Returns:
+            Resposta ajustada ao estilo apropriado
+        """
+        try:
+            style = self.get_response_style(context)
+            
+            # Ajusta formalidade
+            if style.get("formal", 0) > 0.8:
+                response = self._make_formal(response)
+            elif style.get("informal", 0) > 0.8:
+                response = self._make_informal(response)
+            
+            # Ajusta tecnicidade
+            if style.get("técnico", 0) > 0.8:
+                response = self._add_technical_details(response)
+            
+            # Ajusta didática
+            if style.get("didático", 0) > 0.8:
+                response = self._make_didactic(response)
+            
+            # Ajusta empatia
+            if style.get("empático", 0) > 0.8:
+                response = self._add_empathy(response)
+            
+            # Ajusta motivação
+            if style.get("motivador", 0) > 0.8:
+                response = self._add_motivation(response)
+            
+            # Ajusta precisão
+            if style.get("preciso", 0) > 0.8:
+                response = self._make_precise(response)
+            
+            # Ajusta descrição
+            if style.get("descritivo", 0) > 0.8:
+                response = self._add_descriptions(response)
+            
+            # Ajusta informação
+            if style.get("informativo", 0) > 0.8:
+                response = self._add_information(response)
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Erro ao ajustar resposta: {str(e)}")
+            return response
+
+    def _make_formal(self, text: str) -> str:
+        """Torna o texto mais formal"""
+        formal_replacements = {
+            "você": "o(a) senhor(a)",
+            "pra": "para",
+            "tá": "está",
+            "ok": "certo",
+            "beleza": "entendido",
+            "legal": "excelente"
+        }
+        
+        for informal, formal in formal_replacements.items():
+            text = re.sub(rf"\b{informal}\b", formal, text, flags=re.IGNORECASE)
+        
+        return text
+
+    def _make_informal(self, text: str) -> str:
+        """Torna o texto mais informal e amigável"""
+        text = f"Oi! {text}"
+        text = text.replace(".", "! ")
+        text = text.replace("Por favor", "Por favor 😊")
+        text = text.replace("Obrigado", "Obrigado! 👍")
+        return text
+
+    def _add_technical_details(self, text: str) -> str:
+        """Adiciona detalhes técnicos ao texto"""
+        technical_terms = {
+            r"\bfunção\b": "função (um bloco de código reutilizável)",
+            r"\bvariável\b": "variável (um espaço na memória para armazenar dados)",
+            r"\bclasse\b": "classe (um modelo para criar objetos)",
+            r"\bobjeto\b": "objeto (uma instância de uma classe)",
+            r"\blista\b": "lista (uma estrutura de dados ordenada)",
+            r"\bdicionário\b": "dicionário (uma estrutura de dados chave-valor)"
+        }
+        
+        for term, explanation in technical_terms.items():
+            text = re.sub(term, explanation, text, flags=re.IGNORECASE)
+        
+        return text
+
+    def _make_didactic(self, text: str) -> str:
+        """Torna o texto mais didático"""
+        # Adiciona exemplos práticos
+        text = text.replace(".", ". Por exemplo: ")
+        
+        # Adiciona perguntas reflexivas
+        text += "\n\nVocê consegue pensar em outros exemplos similares?"
+        text += "\nQue tal tentar aplicar isso em um projeto pessoal?"
+        
+        return text
+
+    def _add_empathy(self, text: str) -> str:
+        """Adiciona elementos de empatia ao texto"""
+        empathetic_phrases = [
+            "Entendo sua dúvida",
+            "É normal ter essa dificuldade no início",
+            "Vamos resolver isso juntos",
+            "Não se preocupe",
+            "Você está no caminho certo"
+        ]
+        
+        text = f"{random.choice(empathetic_phrases)}! {text}"
+        return text
+
+    def _add_motivation(self, text: str) -> str:
+        """Adiciona elementos motivacionais ao texto"""
+        motivational_phrases = [
+            "Você está fazendo um ótimo trabalho!",
+            "Continue assim!",
+            "Cada pequeno passo é uma conquista!",
+            "A prática leva à perfeição!",
+            "Você tem muito potencial!"
+        ]
+        
+        text = f"{text}\n\n{random.choice(motivational_phrases)} 🚀"
+        return text
+
+    def _make_precise(self, text: str) -> str:
+        """Torna o texto mais preciso e técnico"""
+        # Remove expressões vagas
+        vague_terms = {
+            r"\balguns\b": "específicamente",
+            r"\bvários\b": "múltiplos",
+            r"\bmuitos\b": "numerosos",
+            r"\btalvez\b": "possivelmente",
+            r"\bpode ser\b": "é provável"
+        }
+        
+        for vague, precise in vague_terms.items():
+            text = re.sub(vague, precise, text, flags=re.IGNORECASE)
+        
+        return text
+
+    def _add_descriptions(self, text: str) -> str:
+        """Adiciona descrições detalhadas ao texto"""
+        # Adiciona mais contexto às explicações
+        text = text.replace(".", ", considerando o contexto cultural e histórico. ")
+        text += "\n\nEsta abordagem tem raízes em diversas tradições e práticas."
+        return text
+
+    def _add_information(self, text: str) -> str:
+        """Adiciona informações adicionais ao texto"""
+        # Adiciona recursos extras
+        text += "\n\nRecursos adicionais:"
+        text += "\n- Documentação oficial"
+        text += "\n- Tutoriais relacionados"
+        text += "\n- Exemplos práticos"
+        text += "\n- Referências bibliográficas"
+        return text
 
 if __name__ == "__main__":
     # Exemplo de uso

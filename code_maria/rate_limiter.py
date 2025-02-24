@@ -81,193 +81,79 @@ class RateLimiter:
     Implementa limitação de taxa para diferentes endpoints/operações
     """
     
-    def __init__(self, limits: Optional[Union[Dict[str, Dict[str, int]], str]] = None, window: int = 60):
+    def __init__(self, requests_per_minute: int = 60):
         """
-        Inicializa o rate limiter.
+        Inicializa o limitador de taxa.
         
         Args:
-            limits: Dicionário com limites por API no formato {"api_name": {"calls": int, "period": int}}
-                   ou caminho para arquivo de configuração (JSON/YAML)
-            window: Janela de tempo padrão em segundos
-            
-        Raises:
-            ConfigurationError: Se a configuração for inválida
-            ValidationError: Se os parâmetros forem inválidos
-            FileError: Se houver erro ao carregar arquivo de configuração
+            requests_per_minute: Número máximo de requisições por minuto
         """
-        # Inicializa locks primeiro - DEVE SER A PRIMEIRA COISA
-        self._global_lock = threading.Lock()
-        self.api_locks = defaultdict(threading.Lock)
-        self.request_locks = defaultdict(threading.Lock)
+        self.requests_per_minute = requests_per_minute
+        self.interval = 60.0 / requests_per_minute
+        self.last_request = 0.0
+        self.lock = Lock()
+        self.queue = Queue()
+        self.worker = threading.Thread(target=self._process_queue, daemon=True)
+        self.worker.start()
         
-        # Configuração do logger
-        self.logger = logging.getLogger(__name__)
-        
-        try:
-            # Valida window padrão
-            if not isinstance(window, int) or window <= 0:
-                raise ValidationError("window deve ser um inteiro positivo")
-            self.default_window = window
-            
-            # Inicializa estruturas de dados
-            self.requests = defaultdict(list)
-            self.request_queue = PriorityQueue()
-            self.request_times = defaultdict(list)
-            
-            # Inicializa estatísticas com valores padrão
-            self.stats = {
-                "total_requests": 0,
-                "successful_requests": 0,
-                "throttled_requests": 0,
-                "last_throttle": None,
-                "current_counts": defaultdict(int),
-                "throttle_ratio": 0.0,
-                "queue_wait_times": [],
-                "queued_requests": 0,
-                "api_health": defaultdict(lambda: {"status": "healthy", "last_check": time.time()})
-            }
-            
-            # Métricas por API com valores padrão
-            self.api_metrics = defaultdict(lambda: {
-                "requests": {
-                    "count": 0,
-                    "window_start": time.time(),
-                    "avg_response_time": 0.0,
-                    "error_count": 0,
-                    "success_count": 0,
-                    "last_error": None,
-                    "last_success_time": None
-                }
-            })
-            
-            # Define limites padrão
-            self.limits = {
-                "default": {
-                    "calls": 60,
-                    "period": self.default_window
-                }
-            }
-            
-            # Carrega configuração se fornecida
-            if limits is not None:
-                if isinstance(limits, str):
-                    loaded_limits = self._load_config(limits)
-                    self.config_file = limits
-                else:
-                    if not isinstance(limits, dict):
-                        raise ConfigurationError("limits deve ser um dicionário ou caminho para arquivo")
-                    loaded_limits = limits
-                    self.config_file = None
-                
-                # Valida e atualiza limites
-                self._validate_and_update_limits(loaded_limits)
-            else:
-                self.config_file = None
-            
-            # Controle de estado
-            self._running = True
-            self._shutdown_event = Event()
-            
-            # Inicializa processador de fila
-            self._queue_processor = threading.Thread(target=self._process_queue)
-            self._queue_processor.daemon = True
-            self._queue_processor.start()
-            
-            self.logger.info(f"Rate limiter inicializado com limites: {self.limits}")
-            
-        except Exception as e:
-            self.logger.error(f"Erro na inicialização do rate limiter: {str(e)}")
-            raise
-        
-    def _load_config(self, config_file: str) -> Dict[str, Dict[str, int]]:
-        """
-        Carrega configuração de arquivo com validações rigorosas.
-        
-        Args:
-            config_file: Caminho para arquivo de configuração
-            
-        Returns:
-            Dicionário com configurações validadas
-            
-        Raises:
-            FileError: Se houver erro ao carregar arquivo
-            ConfigurationError: Se a configuração for inválida
-            ValidationError: Se os valores forem inválidos
-        """
-        try:
-            # Valida caminho do arquivo
-            if not isinstance(config_file, str):
-                raise FileError("Caminho do arquivo deve ser uma string")
-                
-            path = Path(config_file)
-            if not path.is_file():
-                raise FileError(f"Arquivo não encontrado: {config_file}")
-                
-            # Verifica extensão suportada
-            if path.suffix.lower() not in [".json", ".yaml", ".yml"]:
-                raise FileError(f"Formato de arquivo não suportado: {path.suffix}")
-                
-            # Carrega e valida conteúdo
+    def _process_queue(self):
+        """Processa a fila de requisições."""
+        while True:
             try:
-                with open(path, "r", encoding="utf-8") as f:
-                    if path.suffix.lower() == ".json":
-                        try:
-                            config = json.load(f)
-                        except json.JSONDecodeError as e:
-                            raise ConfigurationError(f"JSON inválido: {str(e)}")
-                    else:
-                        try:
-                            config = yaml.safe_load(f)
-                        except yaml.YAMLError as e:
-                            raise ConfigurationError(f"YAML inválido: {str(e)}")
-            except OSError as e:
-                raise FileError(f"Erro ao ler arquivo: {str(e)}")
+                # Pega próxima requisição da fila
+                func, args, kwargs, callback = self.queue.get()
                 
-            # Valida estrutura básica
-            if not isinstance(config, dict):
-                raise ConfigurationError("Configuração deve ser um dicionário")
+                # Espera o intervalo necessário
+                with self.lock:
+                    current_time = time.time()
+                    wait_time = max(0, self.interval - (current_time - self.last_request))
+                    time.sleep(wait_time)
+                    self.last_request = time.time()
                 
-            # Valida cada API e seus limites
-            validated_config = {}
-            for api_name, limits in config.items():
-                # Valida nome da API
-                if not isinstance(api_name, str) or not api_name.strip():
-                    raise ValidationError(f"Nome de API inválido: {api_name}")
-                    
-                if not re.match(r"^[a-zA-Z0-9_-]+$", api_name):
-                    raise ValidationError(f"Nome de API contém caracteres inválidos: {api_name}")
-                    
-                # Valida estrutura dos limites
-                if not isinstance(limits, dict):
-                    raise ValidationError(f"Limites para {api_name} deve ser um dicionário")
-                    
-                # Compatibilidade com nomes antigos
-                calls = limits.get("calls", limits.get("requests"))
-                period = limits.get("period", limits.get("window"))
+                # Executa a requisição
+                try:
+                    result = func(*args, **kwargs)
+                    if callback:
+                        callback(result)
+                except Exception as e:
+                    logger.error(f"Erro ao processar requisição: {str(e)}")
+                    if callback:
+                        callback(None, error=str(e))
+                        
+                # Marca tarefa como concluída
+                self.queue.task_done()
                 
-                if calls is None or period is None:
-                    raise ValidationError(f"Configuração incompleta para {api_name}: necessário calls/requests e period/window")
-                    
-                # Valida valores
-                if not isinstance(calls, int) or calls <= 0:
-                    raise ValidationError(f"calls deve ser um inteiro positivo para {api_name}")
-                    
-                if not isinstance(period, int) or period <= 0:
-                    raise ValidationError(f"period deve ser um inteiro positivo para {api_name}")
-                    
-                # Adiciona configuração validada
-                validated_config[api_name] = {
-                    "calls": calls,
-                    "period": period
-                }
+            except Exception as e:
+                logger.error(f"Erro crítico no processador de fila: {str(e)}")
+                time.sleep(1)  # Evita loop infinito em caso de erro
                 
-            return validated_config
-            
-        except (FileError, ConfigurationError, ValidationError):
-            raise
-        except Exception as e:
-            raise ConfigurationError(f"Erro inesperado ao carregar configuração: {str(e)}")
+    def add_request(
+        self,
+        func: Callable,
+        *args,
+        callback: Optional[Callable] = None,
+        **kwargs
+    ) -> None:
+        """
+        Adiciona uma requisição à fila.
         
+        Args:
+            func: Função a ser executada
+            *args: Argumentos posicionais
+            callback: Função de callback opcional
+            **kwargs: Argumentos nomeados
+        """
+        try:
+            self.queue.put((func, args, kwargs, callback))
+        except Exception as e:
+            logger.error(f"Erro ao adicionar requisição: {str(e)}")
+            if callback:
+                callback(None, error=str(e))
+                
+    def wait(self) -> None:
+        """Aguarda todas as requisições serem processadas."""
+        self.queue.join()
+
     def check_limit(self, api_name: str) -> bool:
         """
         Verifica se uma operação está dentro do limite de forma thread-safe.
@@ -683,133 +569,6 @@ class RateLimiter:
         except Exception as e:
             self.logger.error(f"Erro ao liberar requisição para {api_name}: {str(e)}")
             
-    def _process_queue(self):
-        """
-        Processa a fila de requisições de forma thread-safe com tratamento robusto de erros.
-        Inclui timeout para callbacks e atualização segura de métricas.
-        """
-        while self._running:
-            try:
-                # Tenta obter uma requisição da fila com timeout
-                try:
-                    request = self.request_queue.get(timeout=1.0)
-                except queue.Empty:
-                    continue
-                
-                try:
-                    current_time = time.time()
-                    
-                    # Verifica timeout da requisição
-                    if request.timeout is not None:
-                        elapsed = current_time - request.start_time
-                        if elapsed > request.timeout:
-                            logger.warning(
-                                f"Requisição para {request.api_name} descartada por timeout "
-                                f"após {elapsed:.2f}s (limite: {request.timeout}s)"
-                            )
-                            with self._global_lock:
-                                self._update_error_metrics(
-                                    request.api_name,
-                                    "Timeout da requisição",
-                                    elapsed
-                                )
-                            continue
-                    
-                    # Verifica se pode processar usando locks específicos
-                    with self.api_locks[request.api_name]:
-                        if self.check_limit(request.api_name):
-                            process_start = time.time()
-                            
-                            try:
-                                # Registra requisição
-                                self.add_request(request.api_name)
-                                
-                                # Executa callback com timeout se fornecido
-                                if request.callback:
-                                    try:
-                                        if request.timeout:
-                                            remaining_timeout = max(
-                                                0.1,  # Mínimo 100ms
-                                                request.timeout - (time.time() - request.start_time)
-                                            )
-                                            # Usa Timer para garantir timeout do callback
-                                            timer = threading.Timer(
-                                                remaining_timeout,
-                                                self._timeout_callback,
-                                                args=[request]
-                                            )
-                                            timer.start()
-                                            try:
-                                                request.callback()
-                                            finally:
-                                                timer.cancel()
-                                        else:
-                                            request.callback()
-                                            
-                                    except Exception as e:
-                                        logger.error(
-                                            f"Erro no callback para {request.api_name}: {str(e)}"
-                                        )
-                                        with self._global_lock:
-                                            self._update_error_metrics(
-                                                request.api_name,
-                                                f"Erro no callback: {str(e)}",
-                                                time.time() - process_start
-                                            )
-                                        raise
-                                
-                                # Atualiza métricas de sucesso de forma thread-safe
-                                process_time = time.time() - process_start
-                                with self._global_lock:
-                                    self._update_success_metrics(
-                                        request.api_name,
-                                        process_time
-                                    )
-                                
-                                # Marca como completada
-                                request.completed.set()
-                                
-                            except Exception as e:
-                                logger.error(
-                                    f"Erro processando requisição para {request.api_name}: {str(e)}"
-                                )
-                                with self._global_lock:
-                                    self._update_error_metrics(
-                                        request.api_name,
-                                        str(e),
-                                        time.time() - process_start
-                                    )
-                                raise
-                                
-                        else:
-                            # Recoloca na fila se ainda dentro do timeout
-                            if (request.timeout is None or 
-                                time.time() - request.start_time <= request.timeout):
-                                # Recalcula prioridade baseada no tempo de espera
-                                request.priority = time.time() + (
-                                    time.time() - request.start_time
-                                ) * 0.1  # Fator de prioridade
-                                self.request_queue.put(request)
-                                time.sleep(0.1)  # Evita CPU spinning
-                            else:
-                                logger.warning(
-                                    f"Requisição para {request.api_name} descartada por timeout"
-                                )
-                                with self._global_lock:
-                                    self._update_error_metrics(
-                                        request.api_name,
-                                        "Timeout ao aguardar limite",
-                                        time.time() - request.start_time
-                                    )
-                                
-                finally:
-                    # Sempre marca como concluída na fila
-                    self.request_queue.task_done()
-                    
-            except Exception as e:
-                logger.error(f"Erro crítico no processador de fila: {str(e)}")
-                continue
-    
     def _update_success_metrics(self, api_name: str, process_time: float) -> None:
         """Atualiza métricas para uma requisição bem sucedida."""
         metrics = self.api_metrics[api_name]["requests"]

@@ -11,6 +11,23 @@ CodeMaria é uma inteligência artificial autônoma e criativa, desenvolvida com
 - 🔄 Cache inteligente e controle de rate limiting
 - 👩‍🏫 Personalidade única e contextualizada
 - 🇧🇷 Interface em português do Brasil
+- 🌍 Processamento avançado de contexto geográfico e cultural
+
+## Novidades na Última Atualização
+
+### Melhorias no Processamento de Contexto
+
+1. **Contexto Cultural**
+   - Preservação de termos culturais com capitalização correta
+   - Detecção aprimorada de referências históricas e artísticas
+   - Adaptação do estilo de resposta baseado em subcategorias culturais
+   - Garantia de inclusão de termos culturais relevantes nas respostas
+
+2. **Contexto Geográfico**
+   - Identificação precisa de localizações e referências geográficas
+   - Ajuste automático do estilo baseado na urgência da consulta
+   - Preservação de nomes próprios e referências locais
+   - Respostas contextualizadas para consultas de localização
 
 ## Requisitos
 

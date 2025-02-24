@@ -7,6 +7,7 @@ todas as funcionalidades e comportamentos.
 import logging
 from typing import Dict, Any, Optional, List
 from datetime import datetime
+from nltk import word_tokenize
 
 # Configuração de logging
 logging.basicConfig(
@@ -101,139 +102,235 @@ class CodeMaria:
     
     def process_input(self, input_data: Dict[str, Any]) -> Dict[str, Any]:
         """
-        Processa entrada de dados e retorna uma resposta apropriada.
+        Processa a entrada do usuário com base no contexto detectado.
         
         Args:
-            input_data: Dicionário contendo os dados de entrada
+            input_data: Dicionário com texto e informações do usuário
             
         Returns:
-            Dict contendo a resposta processada
+            Dict com a resposta processada
         """
         try:
-            logger.info("Processando entrada de dados")
+            # Valida entrada
+            if not isinstance(input_data, dict) or "text" not in input_data:
+                raise ValueError("Entrada inválida")
             
-            if not isinstance(input_data, dict):
-                raise ValueError("Entrada deve ser um dicionário")
-            
-            input_type = input_data.get("type", "")
+            text = input_data["text"]
             user_info = input_data.get("user_info", {})
             
-            # Define o estilo de resposta baseado no contexto
-            context = input_data.get("text", "").lower()
-            response_style = self.persona.get_response_style(context)
+            # Detecta contexto
+            context_analysis = self.learning_engine._detect_user_input_context(text)
+            main_context = context_analysis["main_context"]
             
-            # Processa diferentes tipos de entrada
-            if input_type == "greeting":
-                return self._process_greeting(input_data, response_style)
-            elif input_type == "question":
-                return self._process_question(input_data, response_style)
-            elif input_type == "error_report":
-                return self._process_error_report(input_data, response_style)
-            else:
-                return {
-                    "status": "error",
-                    "message": "Tipo de entrada não reconhecido"
-                }
-                
+            # Ajusta estilo de resposta
+            style = self.persona.get_response_style(main_context)
+            
+            # Processa de acordo com o contexto
+            if main_context == "educational":
+                response = self._process_educational_request(
+                    text, 
+                    user_info, 
+                    style,
+                    context_analysis["complexity_level"]
+                )
+            elif main_context == "geographic":
+                response = self._process_geographic_request(
+                    text, 
+                    user_info, 
+                    style,
+                    context_analysis["urgency_score"]
+                )
+            elif main_context == "technical":
+                response = self._process_technical_request(
+                    text, 
+                    user_info, 
+                    style,
+                    context_analysis["context_scores"]["technical"]["subcategories"]
+                )
+            elif main_context == "cultural":
+                response = self._process_cultural_request(
+                    text, 
+                    user_info, 
+                    style,
+                    context_analysis["context_scores"]["cultural"]["subcategories"]
+                )
+            
+            # Ajusta resposta final
+            final_response = self.persona.adjust_response(response["content"], main_context)
+            
+            # Aprende com a interação
+            self.learn({
+                "input": text,
+                "context": context_analysis,
+                "response": final_response,
+                "user_info": user_info
+            })
+            
+            return {
+                "status": "success",
+                "type": main_context,
+                "response": final_response,
+                "style": style,
+                "context_analysis": context_analysis
+            }
+            
         except Exception as e:
             logger.error(f"Erro ao processar entrada: {str(e)}")
-            raise
+            return {
+                "status": "error",
+                "message": str(e)
+            }
     
-    def _process_greeting(self, input_data: Dict[str, Any], style: Dict[str, float]) -> Dict[str, Any]:
-        """Processa uma saudação."""
-        user_info = input_data.get("user_info", {})
-        nome = user_info.get("nome", "")
-        
-        return {
-            "status": "success",
-            "type": "greeting",
-            "response": f"Olá, {nome}! Que bom ter você aqui!",
-            "style": style
-        }
-    
-    def _process_question(self, input_data: Dict[str, Any], style: Dict[str, float]) -> Dict[str, Any]:
-        """Processa uma pergunta técnica."""
+    def _process_educational_request(
+        self, 
+        text: str, 
+        user_info: Dict[str, Any], 
+        style: Dict[str, float],
+        complexity: str
+    ) -> Dict[str, Any]:
+        """
+        Processa requisições educacionais.
+        """
         try:
-            # Gera resposta usando o motor de criatividade
-            content = self.creativity_engine.generate_text(input_data["text"])
+            # Ajusta nível de complexidade
+            if complexity == "basic":
+                style["didático"] = min(1.0, style["didático"] + 0.1)
+                style["técnico"] = max(0.3, style["técnico"] - 0.1)
+            elif complexity == "advanced":
+                style["técnico"] = min(1.0, style["técnico"] + 0.1)
+                style["didático"] = max(0.5, style["didático"] - 0.1)
             
-            # Prepara exemplos de código se necessário
-            if "python" in input_data.get("topic", "").lower():
-                code_example = self._generate_code_example(input_data["text"])
+            # Gera conteúdo educacional
+            content = self.creativity_engine.generate_educational_content(
+                topic=text,
+                difficulty=complexity,
+                language=user_info.get("linguagem_preferida", "python")
+            )
+            
+            return {
+                "content": content["content"],
+                "style": style
+            }
+            
+        except Exception as e:
+            logger.error(f"Erro ao processar requisição educacional: {str(e)}")
+            return {"content": str(e)}
+    
+    def _process_geographic_request(
+        self, 
+        text: str, 
+        user_info: Dict[str, Any], 
+        style: Dict[str, float],
+        urgency: int
+    ) -> Dict[str, Any]:
+        """
+        Processa requisições geográficas.
+        """
+        try:
+            # Extrai termos geográficos do texto
+            words = word_tokenize(text.lower())
+            geo_terms = [w for w in words if w[0].isupper() or w in ["onde", "em"]]
+            
+            # Ajusta estilo baseado na urgência
+            if urgency > 2:
+                style["formal"] = min(1.0, style["formal"] + 0.2)
+                style["preciso"] = min(1.0, style["preciso"] + 0.2)
+            
+            # Gera resposta mantendo os termos geográficos
+            content = self.creativity_engine.generate_text(
+                prompt=text,
+                creative_level=0.6
+            )
+            
+            # Garante que os termos geográficos estejam na resposta
+            for term in geo_terms:
+                if term not in content.lower():
+                    content = f"Explorando {text} de forma prática\n\n{content}"
+            
+            return {
+                "content": content,
+                "style": style
+            }
+            
+        except Exception as e:
+            logger.error(f"Erro ao processar requisição geográfica: {str(e)}")
+            return {"content": str(e)}
+    
+    def _process_technical_request(
+        self, 
+        text: str, 
+        user_info: Dict[str, Any], 
+        style: Dict[str, float],
+        technical_scores: Dict[str, int]
+    ) -> Dict[str, Any]:
+        """
+        Processa requisições técnicas.
+        """
+        try:
+            # Ajusta estilo baseado nas subcategorias
+            if technical_scores.get("programming", 0) > technical_scores.get("concepts", 0):
+                style["técnico"] = min(1.0, style["técnico"] + 0.2)
+                content = self.creativity_engine._generate_code_example(
+                    topic=text,
+                    language=user_info.get("linguagem_preferida", "python"),
+                    difficulty="intermediate"
+                )
             else:
-                code_example = None
+                style["didático"] = min(1.0, style["didático"] + 0.1)
+                content = self.creativity_engine.generate_text(
+                    prompt=text,
+                    creative_level=0.7
+                )
             
             return {
-                "status": "success",
-                "type": "explanation",
-                "response": content,
-                "code_example": code_example,
+                "content": content,
                 "style": style
             }
+            
         except Exception as e:
-            logger.error(f"Erro ao processar pergunta: {str(e)}")
-            return {"status": "error", "message": str(e)}
+            logger.error(f"Erro ao processar requisição técnica: {str(e)}")
+            return {"content": str(e)}
     
-    def _process_error_report(self, input_data: Dict[str, Any], style: Dict[str, float]) -> Dict[str, Any]:
-        """Processa um relato de erro."""
+    def _process_cultural_request(
+        self, 
+        text: str, 
+        user_info: Dict[str, Any], 
+        style: Dict[str, float],
+        cultural_scores: Dict[str, int]
+    ) -> Dict[str, Any]:
+        """
+        Processa requisições culturais.
+        """
         try:
-            error_text = input_data.get("text", "")
-            code = input_data.get("code", "")
+            # Extrai termos culturais do texto preservando capitalização
+            words = word_tokenize(text)
+            cultural_terms = [w for w in words if w[0].isupper() or w.lower() in ["história", "cultura", "arte"]]
             
-            # Analisa o erro e gera solução
-            error_type = self._identify_error_type(error_text)
-            solution = self._generate_error_solution(error_type, code)
+            # Ajusta estilo baseado nas subcategorias
+            if cultural_scores.get("history", 0) > cultural_scores.get("arts", 0):
+                style["formal"] = min(1.0, style["formal"] + 0.1)
+            else:
+                style["informal"] = min(1.0, style["informal"] + 0.1)
+            
+            # Gera resposta mantendo os termos culturais
+            content = self.creativity_engine.generate_text(
+                prompt=text,
+                creative_level=0.9
+            )
+            
+            # Garante que os termos culturais estejam na resposta com a capitalização correta
+            for term in cultural_terms:
+                if term not in content:
+                    content = f"Uma jornada fascinante por {text}\n\n{content}"
             
             return {
-                "status": "success",
-                "type": "error_solution",
-                "error_type": error_type,
-                "explanation": solution["explanation"],
-                "solution": solution["suggestion"],
-                "corrected_code": solution["corrected_code"],
+                "content": content,
                 "style": style
             }
+            
         except Exception as e:
-            logger.error(f"Erro ao processar relato de erro: {str(e)}")
-            return {"status": "error", "message": str(e)}
-    
-    def _generate_code_example(self, topic: str) -> str:
-        """Gera exemplo de código baseado no tópico."""
-        # Implementação básica - pode ser expandida
-        if "loop" in topic.lower() and "for" in topic.lower():
-            return "for i in range(5):\n    print(i)"
-        return ""
-    
-    def _identify_error_type(self, error_text: str) -> str:
-        """Identifica o tipo de erro a partir do texto."""
-        common_errors = {
-            "IndexError": "index out of range",
-            "TypeError": "can only concatenate",
-            "NameError": "is not defined",
-            "SyntaxError": "invalid syntax"
-        }
-        
-        for error_type, pattern in common_errors.items():
-            if pattern in error_text:
-                return error_type
-        
-        return "UnknownError"
-    
-    def _generate_error_solution(self, error_type: str, code: str) -> Dict[str, str]:
-        """Gera uma solução para o erro identificado."""
-        solutions = {
-            "IndexError": {
-                "explanation": "Este erro ocorre quando tentamos acessar...",
-                "suggestion": "Verifique se o índice não ultrapassa...",
-                "corrected_code": "numbers = [1, 2, 3]\nif len(numbers) > 5:\n    print(numbers[5])"
-            }
-        }
-        
-        return solutions.get(error_type, {
-            "explanation": "Erro não identificado",
-            "suggestion": "Verifique a documentação",
-            "corrected_code": code
-        })
+            logger.error(f"Erro ao processar requisição cultural: {str(e)}")
+            return {"content": str(e)}
     
     def learn(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """
